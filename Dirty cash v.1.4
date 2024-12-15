@@ -1,22 +1,20 @@
- -- Load Rayfield Library
+-- Load Rayfield Library
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
 -- Create Window
 local Window = Rayfield:CreateWindow({
     Name = "Troll.God Premium Script for SW2",
     LoadingTitle = "Troll.God",
-    LoadingSubtitle = "by Script Developer",
+    LoadingSubtitle = "Enjoy Trolling!",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "TrollGodSW2", -- Folder to save configs
+        FolderName = "TrollGodSW2",
         FileName = "SW2_Config"
     },
     Discord = {
         Enabled = false,
-        Invite = "", -- Optional Discord invite link
-        RememberJoins = true
     },
-    KeySystem = false, -- Set to true if a key system is required
+    KeySystem = false,
 })
 
 -- Global Variables
@@ -24,6 +22,9 @@ local selectedPlayer = nil
 local speed = 16
 local espEnabled = false
 local autoPickupEnabled = false
+local runService = game:GetService("RunService")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
 
 -- Utility Functions
 local function killPlayer(targetPlayer)
@@ -33,20 +34,22 @@ local function killPlayer(targetPlayer)
 end
 
 local function enableESP()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character then
-            local highlight = Instance.new("Highlight")
-            highlight.Parent = player.Character
-            highlight.FillTransparency = 1
-            highlight.OutlineTransparency = 0
-            highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
+    for _, player in pairs(players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            if not player.Character:FindFirstChild("Highlight") then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = player.Character
+                highlight.FillTransparency = 1
+                highlight.OutlineTransparency = 0
+                highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
+            end
         end
     end
     espEnabled = true
 end
 
 local function disableESP()
-    for _, player in pairs(game.Players:GetPlayers()) do
+    for _, player in pairs(players:GetPlayers()) do
         if player.Character and player.Character:FindFirstChild("Highlight") then
             player.Character.Highlight:Destroy()
         end
@@ -55,31 +58,25 @@ local function disableESP()
 end
 
 local function updateWalkSpeed(newSpeed)
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = newSpeed
+    if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+        localPlayer.Character.Humanoid.WalkSpeed = newSpeed
     end
 end
 
 local function autoPickupItems()
-    local player = game.Players.LocalPlayer
-    local character = player.Character
-    if not character then return end
-
-    game:GetService("RunService").Heartbeat:Connect(function()
-        if autoPickupEnabled and character then
+    runService.Heartbeat:Connect(function()
+        if autoPickupEnabled and localPlayer.Character then
             for _, item in pairs(workspace:GetChildren()) do
-                if item:IsA("Part") and (item.Position - character.PrimaryPart.Position).Magnitude < 50 then
-                    firetouchinterest(character.PrimaryPart, item, 0)
-                    firetouchinterest(character.PrimaryPart, item, 1)
+                if item:IsA("Part") and (item.Position - localPlayer.Character.PrimaryPart.Position).Magnitude < 50 then
+                    firetouchinterest(localPlayer.Character.PrimaryPart, item, 0)
+                    firetouchinterest(localPlayer.Character.PrimaryPart, item, 1)
                 end
             end
         end
     end)
 end
 
--- Tabs and Sections
+-- Tabs and Features
 -- Player Tab
 local PlayerTab = Window:CreateTab("Player", 4483362458) -- Player Icon
 
@@ -96,11 +93,15 @@ PlayerTab:CreateDropdown({
 PlayerTab:CreateButton({
     Name = "Kill Selected Player",
     Callback = function()
-        local targetPlayer = game.Players:FindFirstChild(selectedPlayer)
+        local targetPlayer = players:FindFirstChild(selectedPlayer)
         if targetPlayer then
             killPlayer(targetPlayer)
         else
-            print("Player not found!")
+            Rayfield:Notify({
+                Title = "Error",
+                Content = "Player not found!",
+                Duration = 5,
+            })
         end
     end,
 })
@@ -108,8 +109,8 @@ PlayerTab:CreateButton({
 PlayerTab:CreateButton({
     Name = "Kill All Players",
     Callback = function()
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer then
+        for _, player in pairs(players:GetPlayers()) do
+            if player ~= localPlayer then
                 killPlayer(player)
             end
         end
@@ -151,10 +152,10 @@ local AnnoyingTab = Window:CreateTab("Annoying", 6031280882) -- Troll Icon
 AnnoyingTab:CreateButton({
     Name = "One Punch (Set Health to 0 on Impact)",
     Callback = function()
-        game:GetService("RunService").Heartbeat:Connect(function()
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-                    local distance = (game.Players.LocalPlayer.Character.PrimaryPart.Position - player.Character.PrimaryPart.Position).Magnitude
+        runService.Heartbeat:Connect(function()
+            for _, player in pairs(players:GetPlayers()) do
+                if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                    local distance = (localPlayer.Character.PrimaryPart.Position - player.Character.PrimaryPart.Position).Magnitude
                     if distance < 5 then
                         player.Character.Humanoid.Health = 0
                     end
@@ -188,10 +189,9 @@ GunTab:CreateToggle({
     Flag = "InfiniteAmmo",
     Callback = function(Value)
         if Value then
-            local player = game.Players.LocalPlayer
-            if player.Backpack:FindFirstChild("Gun") then
-                local gun = player.Backpack.Gun
-                gun.Ammo.Value = math.huge
+            local tool = localPlayer.Backpack:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Ammo") then
+                tool.Ammo.Value = math.huge
             end
         end
     end,
@@ -200,10 +200,9 @@ GunTab:CreateToggle({
 GunTab:CreateButton({
     Name = "Double Damage",
     Callback = function()
-        local player = game.Players.LocalPlayer
-        if player.Backpack:FindFirstChild("Gun") then
-            local gun = player.Backpack.Gun
-            gun.Damage.Value = gun.Damage.Value * 2
+        local tool = localPlayer.Backpack:FindFirstChildOfClass("Tool")
+        if tool and tool:FindFirstChild("Damage") then
+            tool.Damage.Value = tool.Damage.Value * 2
         end
     end,
 })
@@ -211,7 +210,7 @@ GunTab:CreateButton({
 -- Initialize UI
 Rayfield:Notify({
     Title = "Troll.God Script Loaded",
-    Content = "Have fun trolling!",
+    Content = "Enjoy trolling in SW2!",
     Duration = 6.5,
     Image = 4483362458
 })
