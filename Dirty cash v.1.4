@@ -1,11 +1,11 @@
--- Load Rayfield Library
+-- Load Rayfield Library (Optimized for Mobile)
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
 -- Create Window
 local Window = Rayfield:CreateWindow({
     Name = "Troll.God Premium Script for SW2",
     LoadingTitle = "Troll.God",
-    LoadingSubtitle = "Enjoy Trolling!",
+    LoadingSubtitle = "Mobile Compatible!",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "TrollGodSW2",
@@ -22,9 +22,9 @@ local selectedPlayer = nil
 local speed = 16
 local espEnabled = false
 local autoPickupEnabled = false
-local runService = game:GetService("RunService")
 local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
+local runService = game:GetService("RunService")
 
 -- Utility Functions
 local function killPlayer(targetPlayer)
