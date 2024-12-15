@@ -1,4 +1,4 @@
- -- Load the Orion Library
+-- Load Orion Library
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
 -- Create Window
@@ -16,11 +16,11 @@ _G.godmode = false
 _G.invisible = false
 _G.visible = false
 _G.esp = false
-_G.outlineColor = Color3.new(1, 0, 0) -- Red outline
+_G.outlineColor = Color3.new(1, 0, 0) -- Default red outline
 _G.autoPickup = false
-_G.infiniteAmmo = false
-_G.doubleDamage = false
 _G.onePunch = false
+_G.doubleDamage = false
+_G.infiniteAmmo = false
 
 -- Helper Functions
 
@@ -40,19 +40,10 @@ local function killAllPlayers()
     end
 end
 
--- Update the dropdown list of players
-local function updatePlayerList(dropdown)
-    local playerNames = {}
-    for _, player in pairs(game.Players:GetPlayers()) do
-        table.insert(playerNames, player.Name)
-    end
-    dropdown:Refresh(playerNames, false)
-end
-
--- Add ESP functionality
+-- Enable ESP
 local function enableESP()
     local players = game:GetService("Players")
-    local function createOutline(character)
+    local function applyOutline(character)
         for _, part in pairs(character:GetDescendants()) do
             if part:IsA("BasePart") then
                 local highlight = Instance.new("Highlight")
@@ -68,16 +59,42 @@ local function enableESP()
     players.PlayerAdded:Connect(function(player)
         player.CharacterAdded:Connect(function(character)
             if _G.esp then
-                createOutline(character)
+                applyOutline(character)
             end
         end)
     end)
 
     for _, player in pairs(players:GetPlayers()) do
         if player.Character then
-            createOutline(player.Character)
+            applyOutline(player.Character)
         end
     end
+end
+
+-- Initialize Fly
+local function enableFly()
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    local bodyGyro = Instance.new("BodyGyro")
+    local bodyVelocity = Instance.new("BodyVelocity")
+
+    bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
+    bodyGyro.CFrame = rootPart.CFrame
+    bodyGyro.Parent = rootPart
+
+    bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = rootPart
+
+    game:GetService("RunService").RenderStepped:Connect(function()
+        if _G.fly then
+            bodyVelocity.Velocity = rootPart.CFrame.LookVector * _G.speed
+        else
+            bodyVelocity:Destroy()
+            bodyGyro:Destroy()
+        end
+    end)
 end
 
 -- Tabs Creation
@@ -94,7 +111,7 @@ gunTab:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.doubleDamage = Value
-        -- Add functionality here for double damage
+        -- Add functionality for double damage
     end
 })
 
@@ -103,7 +120,7 @@ gunTab:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.infiniteAmmo = Value
-        -- Add functionality here for infinite ammo
+        -- Add functionality for infinite ammo
     end
 })
 
@@ -119,7 +136,7 @@ annoyingTab:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.onePunch = Value
-        -- Add functionality here for One Punch
+        -- Add functionality for One Punch
     end
 })
 
@@ -168,9 +185,7 @@ playerTab:AddDropdown({
     Callback = function(Value)
         selectedPlayer = Value
     end
-}):SetRefreshCallback(function(dropdown)
-    updatePlayerList(dropdown)
-end)
+})
 
 playerTab:AddButton({
     Name = "Kill Selected Player",
