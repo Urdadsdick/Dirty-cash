@@ -1,25 +1,36 @@
--- Load Orion Library
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+-- Load Rayfield Library
+local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
 -- Create Window
-local Window = OrionLib:MakeWindow({
+local Window = Rayfield:CreateWindow({
     Name = "Troll.God Premium Script for SW2",
-    HidePremium = false,
-    SaveConfig = true,
-    ConfigFolder = "TrollGodSW2"
+    LoadingTitle = "Troll.God",
+    LoadingSubtitle = "by Script Developer",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "TrollGodSW2", -- Folder to save configs
+        FileName = "SW2_Config"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "", -- Optional Discord invite link
+        RememberJoins = true
+    },
+    KeySystem = false, -- Set to true if a key system is required
 })
 
 -- Global Variables
 local selectedPlayer = nil
+local speed = 16
+local espEnabled = false
 
--- Function to Kill Player
+-- Utility Functions
 local function killPlayer(targetPlayer)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
         targetPlayer.Character.Humanoid.Health = 0
     end
 end
 
--- ESP Functionality
 local function enableESP()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character then
@@ -30,26 +41,41 @@ local function enableESP()
             highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
         end
     end
+    espEnabled = true
 end
 
--- Tabs Creation
--- Player Tab
-local playerTab = Window:MakeTab({
-    Name = "Player",
-    Icon = "rbxassetid://6034287518",
-    PremiumOnly = false
-})
+local function disableESP()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("Highlight") then
+            player.Character.Highlight:Destroy()
+        end
+    end
+    espEnabled = false
+end
 
-playerTab:AddDropdown({
+local function updateWalkSpeed(newSpeed)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        character.Humanoid.WalkSpeed = newSpeed
+    end
+end
+
+-- Tabs and Sections
+-- Player Tab
+local PlayerTab = Window:CreateTab("Player", 4483362458) -- Player Icon
+
+PlayerTab:CreateDropdown({
     Name = "Select Player",
-    Default = "",
     Options = {},
+    CurrentOption = "None",
+    Flag = "SelectedPlayer",
     Callback = function(Value)
         selectedPlayer = Value
-    end
+    end,
 })
 
-playerTab:AddButton({
+PlayerTab:CreateButton({
     Name = "Kill Selected Player",
     Callback = function()
         local targetPlayer = game.Players:FindFirstChild(selectedPlayer)
@@ -58,22 +84,122 @@ playerTab:AddButton({
         else
             print("Player not found!")
         end
-    end
+    end,
+})
+
+PlayerTab:CreateButton({
+    Name = "Kill All Players",
+    Callback = function()
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                killPlayer(player)
+            end
+        end
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        speed = Value
+        updateWalkSpeed(speed)
+    end,
 })
 
 -- ESP Tab
-local espTab = Window:MakeTab({
-    Name = "ESP",
-    Icon = "rbxassetid://6034304915",
-    PremiumOnly = false
+local ESPTab = Window:CreateTab("ESP", 6034287518) -- Eye Icon
+
+ESPTab:CreateToggle({
+    Name = "Enable ESP",
+    CurrentValue = false,
+    Flag = "ESPEnabled",
+    Callback = function(Value)
+        if Value then
+            enableESP()
+        else
+            disableESP()
+        end
+    end,
 })
 
-espTab:AddButton({
-    Name = "Enable ESP",
+-- Annoying Tab
+local AnnoyingTab = Window:CreateTab("Annoying", 6031280882) -- Troll Icon
+
+AnnoyingTab:CreateButton({
+    Name = "One Punch (Set Health to 0 on Impact)",
     Callback = function()
-        enableESP()
-    end
+        game:GetService("RunService").Heartbeat:Connect(function()
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                    local distance = (game.Players.LocalPlayer.Character.PrimaryPart.Position - player.Character.PrimaryPart.Position).Magnitude
+                    if distance < 5 then
+                        player.Character.Humanoid.Health = 0
+                    end
+                end
+            end
+        end)
+    end,
+})
+
+-- AutoFarm Tab
+local AutoFarmTab = Window:CreateTab("AutoFarm", 6031302951) -- Coin Icon
+
+AutoFarmTab:CreateToggle({
+    Name = "Auto Pickup",
+    CurrentValue = false,
+    Flag = "AutoPickup",
+    Callback = function(Value)
+        if Value then
+            game:GetService("RunService").Heartbeat:Connect(function()
+                for _, item in pairs(workspace:GetChildren()) do
+                    if item:IsA("Part") and (item.Position - game.Players.LocalPlayer.Character.PrimaryPart.Position).Magnitude < 50 then
+                        firetouchinterest(game.Players.LocalPlayer.Character.PrimaryPart, item, 0)
+                        firetouchinterest(game.Players.LocalPlayer.Character.PrimaryPart, item, 1)
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+-- Gun Tab
+local GunTab = Window:CreateTab("Gun", 6031763426) -- Gun Icon
+
+GunTab:CreateToggle({
+    Name = "Infinite Ammo",
+    CurrentValue = false,
+    Flag = "InfiniteAmmo",
+    Callback = function(Value)
+        if Value then
+            local player = game.Players.LocalPlayer
+            if player.Backpack:FindFirstChild("Gun") then
+                local gun = player.Backpack.Gun
+                gun.Ammo.Value = math.huge
+            end
+        end
+    end,
+})
+
+GunTab:CreateButton({
+    Name = "Double Damage",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player.Backpack:FindFirstChild("Gun") then
+            local gun = player.Backpack.Gun
+            gun.Damage.Value = gun.Damage.Value * 2
+        end
+    end,
 })
 
 -- Initialize UI
-OrionLib:Init()
+Rayfield:Notify({
+    Title = "Troll.God Script Loaded",
+    Content = "Have fun trolling!",
+    Duration = 6.5,
+    Image = 4483362458
+})
