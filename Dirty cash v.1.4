@@ -1,4 +1,4 @@
--- Load Rayfield Library
+ -- Load Rayfield Library
 local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
 
 -- Create Window
@@ -23,6 +23,7 @@ local Window = Rayfield:CreateWindow({
 local selectedPlayer = nil
 local speed = 16
 local espEnabled = false
+local autoPickupEnabled = false
 
 -- Utility Functions
 local function killPlayer(targetPlayer)
@@ -59,6 +60,23 @@ local function updateWalkSpeed(newSpeed)
     if character and character:FindFirstChild("Humanoid") then
         character.Humanoid.WalkSpeed = newSpeed
     end
+end
+
+local function autoPickupItems()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if not character then return end
+
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if autoPickupEnabled and character then
+            for _, item in pairs(workspace:GetChildren()) do
+                if item:IsA("Part") and (item.Position - character.PrimaryPart.Position).Magnitude < 50 then
+                    firetouchinterest(character.PrimaryPart, item, 0)
+                    firetouchinterest(character.PrimaryPart, item, 1)
+                end
+            end
+        end
+    end)
 end
 
 -- Tabs and Sections
@@ -154,15 +172,9 @@ AutoFarmTab:CreateToggle({
     CurrentValue = false,
     Flag = "AutoPickup",
     Callback = function(Value)
-        if Value then
-            game:GetService("RunService").Heartbeat:Connect(function()
-                for _, item in pairs(workspace:GetChildren()) do
-                    if item:IsA("Part") and (item.Position - game.Players.LocalPlayer.Character.PrimaryPart.Position).Magnitude < 50 then
-                        firetouchinterest(game.Players.LocalPlayer.Character.PrimaryPart, item, 0)
-                        firetouchinterest(game.Players.LocalPlayer.Character.PrimaryPart, item, 1)
-                    end
-                end
-            end)
+        autoPickupEnabled = Value
+        if autoPickupEnabled then
+            autoPickupItems()
         end
     end,
 })
