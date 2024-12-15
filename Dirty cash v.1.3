@@ -1,0 +1,180 @@
+-- Load the Orion Library
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+
+-- Create Window
+local Window = OrionLib:MakeWindow({
+    Name = "Troll.God Premium Script for SW2",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "TrollGodSW2"
+})
+
+-- Global Toggles
+_G.fly = false
+_G.speed = 50
+_G.godmode = false
+_G.invisible = false
+_G.visible = false
+_G.esp = false
+_G.outlineColor = Color3.new(1, 0, 0) -- Red outline
+_G.autoPickup = false
+_G.infiniteAmmo = false
+_G.doubleDamage = false
+_G.onePunch = false
+
+-- Current target for Kill Player
+local selectedPlayer = nil
+
+-- Helper Functions
+
+-- Kill Player by Setting Health to 0
+local function killPlayer(targetPlayer)
+    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
+        targetPlayer.Character.Humanoid.Health = 0
+    end
+end
+
+-- Kill All Players
+local function killAllPlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.Health = 0
+        end
+    end
+end
+
+-- Update the dropdown list of players
+local function updatePlayerList(dropdown)
+    local playerNames = {}
+    for _, player in pairs(game.Players:GetPlayers()) do
+        table.insert(playerNames, player.Name)
+    end
+    dropdown:Refresh(playerNames, false)
+end
+
+-- Tabs Creation
+
+-- Gun Tab
+local gunTab = Window:MakeTab({
+    Name = "Gun",
+    Icon = "rbxassetid://6034287518",
+    PremiumOnly = false
+})
+
+gunTab:AddToggle({
+    Name = "2x Damage",
+    Default = false,
+    Callback = function(Value)
+        _G.doubleDamage = Value
+    end
+})
+
+gunTab:AddToggle({
+    Name = "Infinite Ammo",
+    Default = false,
+    Callback = function(Value)
+        _G.infiniteAmmo = Value
+        -- Add functionality here for infinite ammo
+    end
+})
+
+-- Annoying Tab
+local annoyingTab = Window:MakeTab({
+    Name = "Annoying",
+    Icon = "rbxassetid://6034295701",
+    PremiumOnly = false
+})
+
+annoyingTab:AddToggle({
+    Name = "One Punch",
+    Default = false,
+    Callback = function(Value)
+        _G.onePunch = Value
+        -- Add functionality here for One Punch
+    end
+})
+
+-- Player Tab (Includes Kill Player and Kill All)
+local playerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "rbxassetid://6034287518",
+    PremiumOnly = false
+})
+
+playerTab:AddDropdown({
+    Name = "Select Player",
+    Default = "",
+    Options = {},
+    Callback = function(Value)
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Name == Value then
+                selectedPlayer = player
+                break
+            end
+        end
+    end
+}):SetRefreshCallback(function(dropdown)
+    updatePlayerList(dropdown)
+end)
+
+playerTab:AddButton({
+    Name = "Kill Selected Player",
+    Callback = function()
+        if selectedPlayer then
+            killPlayer(selectedPlayer)
+        else
+            print("No player selected!")
+        end
+    end
+})
+
+playerTab:AddButton({
+    Name = "Kill All Players",
+    Callback = function()
+        killAllPlayers()
+    end
+})
+
+-- ESP Tab
+local espTab = Window:MakeTab({
+    Name = "ESP & Wall Hacks",
+    Icon = "rbxassetid://6034304915",
+    PremiumOnly = false
+})
+
+espTab:AddToggle({
+    Name = "Enable ESP",
+    Default = false,
+    Callback = function(Value)
+        _G.esp = Value
+        -- Add functionality here for ESP
+    end
+})
+
+espTab:AddColorPicker({
+    Name = "Outline Color",
+    Default = _G.outlineColor,
+    Callback = function(Value)
+        _G.outlineColor = Value
+        -- Update outline color for ESP
+    end
+})
+
+-- AutoFarm Tab
+local autoFarmTab = Window:MakeTab({
+    Name = "AutoFarm",
+    Icon = "rbxassetid://6034287518",
+    PremiumOnly = false
+})
+
+autoFarmTab:AddToggle({
+    Name = "Auto Pickup",
+    Default = false,
+    Callback = function(Value)
+        _G.autoPickup = Value
+        -- Add functionality here for Auto Pickup
+    end
+})
+
+-- Initialize GUI
+OrionLib:Init()
