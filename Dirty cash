@@ -3,72 +3,86 @@ local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shle
 
 -- Create Window
 local Window = OrionLib:MakeWindow({
-    Name = "Goat Hub for Roblox",
+    Name = "Troll.God Premium Script for SW2",
     HidePremium = false,
     SaveConfig = true,
-    ConfigFolder = "GoatHub"
+    ConfigFolder = "TrollGodSW2"
 })
 
--- Global Variables
-_G.ragdollCollapse = false
-_G.godmode = false
+-- Global Toggles
 _G.fly = false
-_G.autoPickup = false
-_G.speed = 16 -- Default speed
+_G.speed = 50
+_G.godmode = false
 _G.invisible = false
-_G.targetPlayer = nil -- For Kill Player
+_G.esp = false
+_G.outlineColor = Color3.new(1, 0, 0) -- Red outline
+_G.autoPickup = false
+_G.infiniteAmmo = false
+_G.doubleDamage = false
+_G.onePunch = false
 
--- Helper Functions --
+-- Helper Functions
 
--- Godmode: Sets player health to a very high value
-function enableGodmode()
+-- Fly Toggle
+local bodyGyro, bodyVelocity
+local function toggleFly(state)
     local player = game.Players.LocalPlayer
-    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
-        local humanoid = player.Character.Humanoid
-        humanoid.MaxHealth = math.huge
-        humanoid.Health = math.huge
-        print("Godmode enabled!")
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local humanoidRootPart = player.Character.HumanoidRootPart
+
+    if state then
+        bodyGyro = Instance.new("BodyGyro", humanoidRootPart)
+        bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
+        bodyGyro.CFrame = humanoidRootPart.CFrame
+
+        bodyVelocity = Instance.new("BodyVelocity", humanoidRootPart)
+        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+
+        game:GetService("RunService").Heartbeat:Connect(function()
+            if _G.fly then
+                bodyVelocity.Velocity = humanoidRootPart.CFrame.LookVector * _G.speed
+            end
+        end)
+    else
+        if bodyGyro then bodyGyro:Destroy() end
+        if bodyVelocity then bodyVelocity:Destroy() end
     end
 end
 
--- Fly: Enables flying by applying BodyVelocity and BodyGyro
-function enableFly()
+-- Godmode
+local function enableGodmode()
     local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
-    -- Create BodyGyro and BodyVelocity for flying
-    local bodyGyro = Instance.new("BodyGyro")
-    bodyGyro.P = 9e4
-    bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-    bodyGyro.CFrame = humanoidRootPart.CFrame
-    bodyGyro.Parent = humanoidRootPart
-
-    local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-    bodyVelocity.Velocity = Vector3.zero
-    bodyVelocity.Parent = humanoidRootPart
-
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if _G.fly then
-            bodyGyro.CFrame = workspace.CurrentCamera.CFrame
-            bodyVelocity.Velocity = workspace.CurrentCamera.CFrame.LookVector * 50
-        else
-            bodyGyro:Destroy()
-            bodyVelocity:Destroy()
-        end
-    end)
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local humanoid = player.Character.Humanoid
+        humanoid.MaxHealth = math.huge
+        humanoid.Health = math.huge
+    end
 end
 
--- Auto Pickup: Automatically collects items in range
-function enableAutoPickup()
+-- Become Visible
+local function becomeVisible()
     local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+    if player.Character then
+        for _, part in pairs(player.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Transparency = 0
+            end
+        end
+    end
+end
 
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if _G.autoPickup then
-            for _, item in pairs(workspace:GetChildren()) do
-                if item:IsA("Part") and (item.Position - character.HumanoidRootPart.Position).Magnitude < 50 then
+-- Auto Pickup Items
+local function enableAutoPickup()
+    local player = game.Players.LocalPlayer
+    if not player.Character then return end
+    local character = player.Character
+
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if _G.autoPickup and character then
+            for _, item in pairs(workspace:GetDescendants()) do
+                if item:IsA("BasePart") and (item.Position - character.PrimaryPart.Position).Magnitude < 10 then
                     firetouchinterest(character.HumanoidRootPart, item, 0)
                     firetouchinterest(character.HumanoidRootPart, item, 1)
                 end
@@ -77,46 +91,65 @@ function enableAutoPickup()
     end)
 end
 
--- Speed Hack: Adjusts walk speed based on user input
-function setWalkSpeed(speed)
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
+-- ESP & Wall Hacks
+local function toggleESP(state)
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if state then
+                -- Create BillboardGui for ESP
+                local billboard = Instance.new("BillboardGui", player.Character.HumanoidRootPart)
+                billboard.Name = "ESP"
+                billboard.Size = UDim2.new(1, 0, 1, 0)
+                billboard.AlwaysOnTop = true
 
-    humanoid.WalkSpeed = speed
-    print("Walk speed set to: " .. speed)
-end
+                -- Add TextLabel
+                local text = Instance.new("TextLabel", billboard)
+                text.Text = player.Name
+                text.Size = UDim2.new(1, 0, 1, 0)
+                text.BackgroundTransparency = 1
+                text.TextColor3 = Color3.new(1, 0, 0) -- Red text
+                text.TextScaled = true
 
--- Invisible Mode: Makes the player invisible
-function enableInvisible()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.Transparency = 1
-        elseif part:IsA("Decal") then
-            part.Transparency = 1
+                -- Add Outline
+                local highlight = Instance.new("Highlight", player.Character)
+                highlight.Name = "Outline"
+                highlight.FillTransparency = 1
+                highlight.OutlineTransparency = 0
+                highlight.OutlineColor = _G.outlineColor
+            else
+                -- Remove ESP and Outline
+                if player.Character.HumanoidRootPart:FindFirstChild("ESP") then
+                    player.Character.HumanoidRootPart.ESP:Destroy()
+                end
+                if player.Character:FindFirstChild("Outline") then
+                    player.Character.Outline:Destroy()
+                end
+            end
         end
     end
-    character.HumanoidRootPart.Anchored = true
 end
 
--- Ragdoll Collapse: Ragdolls nearby players when touched
-function enableRagdollCollapse()
+-- Auto-Update ESP for New Players
+game.Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.CharacterAdded:Connect(function()
+        if _G.esp then
+            toggleESP(true)
+        end
+    end)
+end)
+
+-- One Punch with Fist Items
+local function enableOnePunch()
     local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+    local character = player.Character
 
     game:GetService("RunService").Heartbeat:Connect(function()
-        if _G.ragdollCollapse and character and character:FindFirstChild("HumanoidRootPart") then
+        if _G.onePunch and character then
             for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-                if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("Humanoid") then
-                    local otherCharacter = otherPlayer.Character
-                    local humanoid = otherCharacter:FindFirstChild("Humanoid")
-                    local distance = (character.HumanoidRootPart.Position - otherCharacter.PrimaryPart.Position).Magnitude
-
-                    if humanoid and humanoid.Health > 0 and distance < 5 then -- 5-stud range
-                        humanoid:ChangeState(Enum.HumanoidStateType.Physics) -- Ragdoll state
+                if otherPlayer ~= player and otherPlayer.Character then
+                    local humanoid = otherPlayer.Character:FindFirstChild("Humanoid")
+                    if humanoid and character:FindFirstChild("Fist") then
+                        humanoid.Health = 0 -- Instantly kills the other player when punched with a fist
                     end
                 end
             end
@@ -124,140 +157,121 @@ function enableRagdollCollapse()
     end)
 end
 
--- Kill Player: Instantly eliminates a specific player
-function killPlayer(target)
+-- Infinite Ammo
+local function enableInfiniteAmmo()
     local player = game.Players.LocalPlayer
-    if player and target and target.Character and target.Character:FindFirstChild("Humanoid") then
-        target.Character.Humanoid.Health = 0 -- Kill the target player
-        print(target.Name .. " has been killed!")
+    if not player then return end
+
+    local backpack = player.Backpack
+    local character = player.Character
+
+    for _, tool in pairs(backpack:GetChildren()) do
+        if tool:FindFirstChild("Ammo") then
+            tool.Ammo.Changed:Connect(function()
+                if _G.infiniteAmmo then
+                    tool.Ammo.Value = tool.Ammo.MaxValue
+                end
+            end)
+        end
+    end
+
+    if character then
+        for _, tool in pairs(character:GetChildren()) do
+            if tool:FindFirstChild("Ammo") then
+                tool.Ammo.Changed:Connect(function()
+                    if _G.infiniteAmmo then
+                        tool.Ammo.Value = tool.Ammo.MaxValue
+                    end
+                end)
+            end
+        end
     end
 end
 
--- Tabs and Features --
+-- Tabs Creation
+
+-- Gun Tab
+local gunTab = Window:MakeTab({
+    Name = "Gun",
+    Icon = "rbxassetid://6034287518",
+    PremiumOnly = false
+})
+
+gunTab:AddToggle({
+    Name = "2x Damage",
+    Default = false,
+    Callback = function(Value)
+        _G.doubleDamage = Value
+    end
+})
+
+gunTab:AddToggle({
+    Name = "Infinite Ammo",
+    Default = false,
+    Callback = function(Value)
+        _G.infiniteAmmo = Value
+        enableInfiniteAmmo()
+    end
+})
 
 -- Annoying Tab
 local annoyingTab = Window:MakeTab({
     Name = "Annoying",
-    Icon = "rbxassetid://6034816636",
+    Icon = "rbxassetid://6034295701",
     PremiumOnly = false
 })
 
-annoyingTab:AddDropdown({
-    Name = "Select Player to Kill",
-    Options = {},
-    Callback = function(Value)
-        for _, p in pairs(game.Players:GetPlayers()) do
-            if p.Name == Value then
-                _G.targetPlayer = p
-                break
-            end
-        end
-    end
-})
-
-annoyingTab:AddButton({
-    Name = "Kill Selected Player",
-    Callback = function()
-        if _G.targetPlayer then
-            killPlayer(_G.targetPlayer)
-        else
-            print("No player selected!")
-        end
-    end
-})
-
--- Trolling Tab
-local trollingTab = Window:MakeTab({
-    Name = "Trolling",
-    Icon = "rbxassetid://6034816636",
-    PremiumOnly = false
-})
-
-trollingTab:AddToggle({
-    Name = "Enable Godmode",
+annoyingTab:AddToggle({
+    Name = "One Punch",
     Default = false,
     Callback = function(Value)
-        _G.godmode = Value
-        if Value then enableGodmode() end
+        _G.onePunch = Value
+        enableOnePunch()
     end
 })
 
-trollingTab:AddToggle({
-    Name = "Enable Ragdoll Collapse",
-    Default = false,
-    Callback = function(Value)
-        _G.ragdollCollapse = Value
-        if Value then enableRagdollCollapse() end
-    end
-})
-
--- Auto Farm Tab
+-- AutoFarm Tab
 local autoFarmTab = Window:MakeTab({
-    Name = "Auto Farm",
-    Icon = "rbxassetid://6034816636",
+    Name = "AutoFarm",
+    Icon = "rbxassetid://6034287518",
     PremiumOnly = false
 })
 
 autoFarmTab:AddToggle({
-    Name = "Auto Pickup Items",
+    Name = "Auto Pickup",
     Default = false,
     Callback = function(Value)
         _G.autoPickup = Value
-        if Value then enableAutoPickup() end
-    end
-})
-
--- Players Tab
-local playersTab = Window:MakeTab({
-    Name = "Players",
-    Icon = "rbxassetid://6034816636",
-    PremiumOnly = false
-})
-
-playersTab:AddTextbox({
-    Name = "Set Walk Speed",
-    Default = "16",
-    TextDisappear = true,
-    Callback = function(Value)
-        local speed = tonumber(Value)
-        if speed then
-            _G.speed = speed
-            setWalkSpeed(speed)
-        else
-            print("Invalid speed value")
+        if Value then
+            enableAutoPickup()
         end
     end
 })
 
-playersTab:AddButton({
-    Name = "Become Invisible",
-    Callback = function()
-        _G.invisible = true
-        enableInvisible()
+-- ESP Tab
+local espTab = Window:MakeTab({
+    Name = "ESP & Wall Hacks",
+    Icon = "rbxassetid://6034304915",
+    PremiumOnly = false
+})
+
+espTab:AddToggle({
+    Name = "Enable ESP",
+    Default = false,
+    Callback = function(Value)
+        _G.esp = Value
+        toggleESP(Value)
     end
 })
 
-playersTab:AddButton({
-    Name = "Enable Fly",
-    Callback = function()
-        _G.fly = true
-        enableFly()
+espTab:AddColorPicker({
+    Name = "Outline Color",
+    Default = _G.outlineColor,
+    Callback = function(Value)
+        _G.outlineColor = Value
+        toggleESP(_G.esp)
     end
 })
 
 -- Initialize GUI
 OrionLib:Init()
-
--- Populate Player Dropdown
-local dropdown = annoyingTab:GetDropdown("Select Player to Kill")
-for _, player in pairs(game.Players:GetPlayers()) do
-    dropdown:AddOption(player.Name)
-end
-
-game.Players.PlayerAdded:Connect(function(player)
-    dropdown:AddOption(player.Name)
-end)
-
-game.Players.PlayerRemoving:Connect(function(player)
-    dropdown:RemoveOption(player.Name)
-end)
