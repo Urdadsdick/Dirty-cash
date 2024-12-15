@@ -1,4 +1,4 @@
--- Load the Orion Library
+ -- Load the Orion Library
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
 -- Create Window
@@ -21,9 +21,6 @@ _G.autoPickup = false
 _G.infiniteAmmo = false
 _G.doubleDamage = false
 _G.onePunch = false
-
--- Current target for Kill Player
-local selectedPlayer = nil
 
 -- Helper Functions
 
@@ -52,6 +49,37 @@ local function updatePlayerList(dropdown)
     dropdown:Refresh(playerNames, false)
 end
 
+-- Add ESP functionality
+local function enableESP()
+    local players = game:GetService("Players")
+    local function createOutline(character)
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = part
+                highlight.FillTransparency = 1
+                highlight.OutlineTransparency = 0
+                highlight.OutlineColor = _G.outlineColor
+                highlight.Adornee = part
+            end
+        end
+    end
+
+    players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function(character)
+            if _G.esp then
+                createOutline(character)
+            end
+        end)
+    end)
+
+    for _, player in pairs(players:GetPlayers()) do
+        if player.Character then
+            createOutline(player.Character)
+        end
+    end
+end
+
 -- Tabs Creation
 
 -- Gun Tab
@@ -66,6 +94,7 @@ gunTab:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.doubleDamage = Value
+        -- Add functionality here for double damage
     end
 })
 
@@ -101,17 +130,43 @@ local playerTab = Window:MakeTab({
     PremiumOnly = false
 })
 
+playerTab:AddTextbox({
+    Name = "Walk Speed",
+    Default = "50",
+    TextDisappear = true,
+    Callback = function(Value)
+        local speed = tonumber(Value)
+        if speed then
+            _G.speed = speed
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = _G.speed
+            end
+        end
+    end
+})
+
+playerTab:AddToggle({
+    Name = "Godmode",
+    Default = false,
+    Callback = function(Value)
+        _G.godmode = Value
+        if Value then
+            local humanoid = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = 999999
+                humanoid.Health = 999999
+            end
+        end
+    end
+})
+
 playerTab:AddDropdown({
     Name = "Select Player",
     Default = "",
     Options = {},
     Callback = function(Value)
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player.Name == Value then
-                selectedPlayer = player
-                break
-            end
-        end
+        selectedPlayer = Value
     end
 }):SetRefreshCallback(function(dropdown)
     updatePlayerList(dropdown)
@@ -120,10 +175,11 @@ end)
 playerTab:AddButton({
     Name = "Kill Selected Player",
     Callback = function()
-        if selectedPlayer then
-            killPlayer(selectedPlayer)
+        local targetPlayer = game.Players:FindFirstChild(selectedPlayer)
+        if targetPlayer then
+            killPlayer(targetPlayer)
         else
-            print("No player selected!")
+            print("Player not found!")
         end
     end
 })
@@ -147,7 +203,9 @@ espTab:AddToggle({
     Default = false,
     Callback = function(Value)
         _G.esp = Value
-        -- Add functionality here for ESP
+        if Value then
+            enableESP()
+        end
     end
 })
 
@@ -156,7 +214,6 @@ espTab:AddColorPicker({
     Default = _G.outlineColor,
     Callback = function(Value)
         _G.outlineColor = Value
-        -- Update outline color for ESP
     end
 })
 
