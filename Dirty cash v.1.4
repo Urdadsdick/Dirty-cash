@@ -9,173 +9,35 @@ local Window = OrionLib:MakeWindow({
     ConfigFolder = "TrollGodSW2"
 })
 
--- Global Toggles
-_G.fly = false
-_G.speed = 50
-_G.godmode = false
-_G.invisible = false
-_G.visible = false
-_G.esp = false
-_G.outlineColor = Color3.new(1, 0, 0) -- Default red outline
-_G.autoPickup = false
-_G.onePunch = false
-_G.doubleDamage = false
-_G.infiniteAmmo = false
+-- Global Variables
+local selectedPlayer = nil
 
--- Helper Functions
-
--- Kill Player by Setting Health to 0
+-- Function to Kill Player
 local function killPlayer(targetPlayer)
     if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
         targetPlayer.Character.Humanoid.Health = 0
     end
 end
 
--- Kill All Players
-local function killAllPlayers()
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.Health = 0
-        end
-    end
-end
-
--- Enable ESP
+-- ESP Functionality
 local function enableESP()
-    local players = game:GetService("Players")
-    local function applyOutline(character)
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local highlight = Instance.new("Highlight")
-                highlight.Parent = part
-                highlight.FillTransparency = 1
-                highlight.OutlineTransparency = 0
-                highlight.OutlineColor = _G.outlineColor
-                highlight.Adornee = part
-            end
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = player.Character
+            highlight.FillTransparency = 1
+            highlight.OutlineTransparency = 0
+            highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
         end
     end
-
-    players.PlayerAdded:Connect(function(player)
-        player.CharacterAdded:Connect(function(character)
-            if _G.esp then
-                applyOutline(character)
-            end
-        end)
-    end)
-
-    for _, player in pairs(players:GetPlayers()) do
-        if player.Character then
-            applyOutline(player.Character)
-        end
-    end
-end
-
--- Initialize Fly
-local function enableFly()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local rootPart = character:WaitForChild("HumanoidRootPart")
-    local bodyGyro = Instance.new("BodyGyro")
-    local bodyVelocity = Instance.new("BodyVelocity")
-
-    bodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
-    bodyGyro.CFrame = rootPart.CFrame
-    bodyGyro.Parent = rootPart
-
-    bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
-    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = rootPart
-
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if _G.fly then
-            bodyVelocity.Velocity = rootPart.CFrame.LookVector * _G.speed
-        else
-            bodyVelocity:Destroy()
-            bodyGyro:Destroy()
-        end
-    end)
 end
 
 -- Tabs Creation
-
--- Gun Tab
-local gunTab = Window:MakeTab({
-    Name = "Gun",
-    Icon = "rbxassetid://6034287518",
-    PremiumOnly = false
-})
-
-gunTab:AddToggle({
-    Name = "2x Damage",
-    Default = false,
-    Callback = function(Value)
-        _G.doubleDamage = Value
-        -- Add functionality for double damage
-    end
-})
-
-gunTab:AddToggle({
-    Name = "Infinite Ammo",
-    Default = false,
-    Callback = function(Value)
-        _G.infiniteAmmo = Value
-        -- Add functionality for infinite ammo
-    end
-})
-
--- Annoying Tab
-local annoyingTab = Window:MakeTab({
-    Name = "Annoying",
-    Icon = "rbxassetid://6034295701",
-    PremiumOnly = false
-})
-
-annoyingTab:AddToggle({
-    Name = "One Punch",
-    Default = false,
-    Callback = function(Value)
-        _G.onePunch = Value
-        -- Add functionality for One Punch
-    end
-})
-
--- Player Tab (Includes Kill Player and Kill All)
+-- Player Tab
 local playerTab = Window:MakeTab({
     Name = "Player",
     Icon = "rbxassetid://6034287518",
     PremiumOnly = false
-})
-
-playerTab:AddTextbox({
-    Name = "Walk Speed",
-    Default = "50",
-    TextDisappear = true,
-    Callback = function(Value)
-        local speed = tonumber(Value)
-        if speed then
-            _G.speed = speed
-            local character = game.Players.LocalPlayer.Character
-            if character and character:FindFirstChild("Humanoid") then
-                character.Humanoid.WalkSpeed = _G.speed
-            end
-        end
-    end
-})
-
-playerTab:AddToggle({
-    Name = "Godmode",
-    Default = false,
-    Callback = function(Value)
-        _G.godmode = Value
-        if Value then
-            local humanoid = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.MaxHealth = 999999
-                humanoid.Health = 999999
-            end
-        end
-    end
 })
 
 playerTab:AddDropdown({
@@ -199,54 +61,19 @@ playerTab:AddButton({
     end
 })
 
-playerTab:AddButton({
-    Name = "Kill All Players",
-    Callback = function()
-        killAllPlayers()
-    end
-})
-
 -- ESP Tab
 local espTab = Window:MakeTab({
-    Name = "ESP & Wall Hacks",
+    Name = "ESP",
     Icon = "rbxassetid://6034304915",
     PremiumOnly = false
 })
 
-espTab:AddToggle({
+espTab:AddButton({
     Name = "Enable ESP",
-    Default = false,
-    Callback = function(Value)
-        _G.esp = Value
-        if Value then
-            enableESP()
-        end
+    Callback = function()
+        enableESP()
     end
 })
 
-espTab:AddColorPicker({
-    Name = "Outline Color",
-    Default = _G.outlineColor,
-    Callback = function(Value)
-        _G.outlineColor = Value
-    end
-})
-
--- AutoFarm Tab
-local autoFarmTab = Window:MakeTab({
-    Name = "AutoFarm",
-    Icon = "rbxassetid://6034287518",
-    PremiumOnly = false
-})
-
-autoFarmTab:AddToggle({
-    Name = "Auto Pickup",
-    Default = false,
-    Callback = function(Value)
-        _G.autoPickup = Value
-        -- Add functionality here for Auto Pickup
-    end
-})
-
--- Initialize GUI
+-- Initialize UI
 OrionLib:Init()
