@@ -12,9 +12,10 @@ if game.PlaceId == 6804602922 then
 
     -- Global Settings
     local settings = {
-        autoFarm = false,
         walkSpeed = 16,
-        godMode = false
+        godMode = false,
+        onePunch = false,
+        noClip = false
     }
 
     -- Utility Functions
@@ -46,23 +47,29 @@ if game.PlaceId == 6804602922 then
         settings.godMode = false
     end
 
-    local function autoFarm()
-        while settings.autoFarm do
-            -- Implement your farming logic here
-            local character = game.Players.LocalPlayer.Character
-            if character then
-                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-                if humanoidRootPart then
-                    -- Example: Move to a dummy to train
-                    for _, dummy in pairs(workspace:GetChildren()) do
-                        if dummy:IsA("Model") and dummy.Name == "TrainingDummy" then
-                            humanoidRootPart.CFrame = dummy.PrimaryPart.CFrame
-                            -- Add interaction logic if needed
-                        end
+    local function onePunchKill()
+        while settings.onePunch do
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid.Health = 0 -- Instantly kill the player
                     end
                 end
             end
-            task.wait(1) -- Adjust delay as needed
+            task.wait(0.5) -- Adjust timing to prevent server overload
+        end
+    end
+
+    local function toggleNoClip(state)
+        settings.noClip = state
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = not state
+                end
+            end
         end
     end
 
@@ -85,6 +92,19 @@ if game.PlaceId == 6804602922 then
         end
     })
 
+    playerTab:AddTextBox({
+        Name = "Mobile Walk Speed",
+        Default = "16",
+        Numeric = true,
+        Callback = function(value)
+            local newSpeed = tonumber(value)
+            if newSpeed then
+                settings.walkSpeed = newSpeed
+                setWalkSpeed(newSpeed)
+            end
+        end
+    })
+
     playerTab:AddToggle({
         Name = "God Mode",
         Default = false,
@@ -97,20 +117,28 @@ if game.PlaceId == 6804602922 then
         end
     })
 
-    -- Farming Tab
-    local farmingTab = Window:MakeTab({
-        Name = "Farming",
+    playerTab:AddToggle({
+        Name = "NoClip",
+        Default = false,
+        Callback = function(state)
+            toggleNoClip(state)
+        end
+    })
+
+    -- Trolling Tab
+    local trollingTab = Window:MakeTab({
+        Name = "Trolling",
         Icon = "rbxassetid://4483345998",
         PremiumOnly = false
     })
 
-    farmingTab:AddToggle({
-        Name = "Auto Farm",
+    trollingTab:AddToggle({
+        Name = "One Punch Kill",
         Default = false,
         Callback = function(state)
-            settings.autoFarm = state
+            settings.onePunch = state
             if state then
-                autoFarm()
+                onePunchKill()
             end
         end
     })
