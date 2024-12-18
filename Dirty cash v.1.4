@@ -1,216 +1,135 @@
--- Load Rayfield Library (Optimized for Mobile)
-local Rayfield = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Rayfield/main/source"))()
+if game.PlaceId == 6804602922 then
+    -- Load Orion Library
+    local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
--- Create Window
-local Window = Rayfield:CreateWindow({
-    Name = "Troll.God Premium Script for SW2",
-    LoadingTitle = "Troll.God",
-    LoadingSubtitle = "Mobile Compatible!",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "TrollGodSW2",
-        FileName = "SW2_Config"
-    },
-    Discord = {
-        Enabled = false,
-    },
-    KeySystem = false,
-})
+    -- Create Window
+    local Window = OrionLib:MakeWindow({
+        Name = "Boxing Beta Script",
+        HidePremium = false,
+        SaveConfig = true,
+        ConfigFolder = "BoxingBetaConfig"
+    })
 
--- Global Variables
-local selectedPlayer = nil
-local speed = 16
-local espEnabled = false
-local autoPickupEnabled = false
-local players = game:GetService("Players")
-local localPlayer = players.LocalPlayer
-local runService = game:GetService("RunService")
+    -- Global Settings
+    local settings = {
+        autoFarm = false,
+        walkSpeed = 16,
+        godMode = false
+    }
 
--- Utility Functions
-local function killPlayer(targetPlayer)
-    if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("Humanoid") then
-        targetPlayer.Character.Humanoid.Health = 0
-    end
-end
-
-local function enableESP()
-    for _, player in pairs(players:GetPlayers()) do
-        if player ~= localPlayer and player.Character then
-            if not player.Character:FindFirstChild("Highlight") then
-                local highlight = Instance.new("Highlight")
-                highlight.Parent = player.Character
-                highlight.FillTransparency = 1
-                highlight.OutlineTransparency = 0
-                highlight.OutlineColor = Color3.new(1, 0, 0) -- Red outline
+    -- Utility Functions
+    local function setWalkSpeed(speed)
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = speed
             end
         end
     end
-    espEnabled = true
-end
 
-local function disableESP()
-    for _, player in pairs(players:GetPlayers()) do
-        if player.Character and player.Character:FindFirstChild("Highlight") then
-            player.Character.Highlight:Destroy()
-        end
-    end
-    espEnabled = false
-end
-
-local function updateWalkSpeed(newSpeed)
-    if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
-        localPlayer.Character.Humanoid.WalkSpeed = newSpeed
-    end
-end
-
-local function autoPickupItems()
-    runService.Heartbeat:Connect(function()
-        if autoPickupEnabled and localPlayer.Character then
-            for _, item in pairs(workspace:GetChildren()) do
-                if item:IsA("Part") and (item.Position - localPlayer.Character.PrimaryPart.Position).Magnitude < 50 then
-                    firetouchinterest(localPlayer.Character.PrimaryPart, item, 0)
-                    firetouchinterest(localPlayer.Character.PrimaryPart, item, 1)
+    local function enableGodMode()
+        settings.godMode = true
+        while settings.godMode do
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.Health = humanoid.MaxHealth
                 end
             end
+            task.wait(0.1)
         end
-    end)
-end
+    end
 
--- Tabs and Features
--- Player Tab
-local PlayerTab = Window:CreateTab("Player", 4483362458) -- Player Icon
+    local function disableGodMode()
+        settings.godMode = false
+    end
 
-PlayerTab:CreateDropdown({
-    Name = "Select Player",
-    Options = {},
-    CurrentOption = "None",
-    Flag = "SelectedPlayer",
-    Callback = function(Value)
-        selectedPlayer = Value
-    end,
-})
-
-PlayerTab:CreateButton({
-    Name = "Kill Selected Player",
-    Callback = function()
-        local targetPlayer = players:FindFirstChild(selectedPlayer)
-        if targetPlayer then
-            killPlayer(targetPlayer)
-        else
-            Rayfield:Notify({
-                Title = "Error",
-                Content = "Player not found!",
-                Duration = 5,
-            })
-        end
-    end,
-})
-
-PlayerTab:CreateButton({
-    Name = "Kill All Players",
-    Callback = function()
-        for _, player in pairs(players:GetPlayers()) do
-            if player ~= localPlayer then
-                killPlayer(player)
-            end
-        end
-    end,
-})
-
-PlayerTab:CreateSlider({
-    Name = "Walk Speed",
-    Range = {16, 100},
-    Increment = 1,
-    Suffix = "Speed",
-    CurrentValue = 16,
-    Flag = "WalkSpeed",
-    Callback = function(Value)
-        speed = Value
-        updateWalkSpeed(speed)
-    end,
-})
-
--- ESP Tab
-local ESPTab = Window:CreateTab("ESP", 6034287518) -- Eye Icon
-
-ESPTab:CreateToggle({
-    Name = "Enable ESP",
-    CurrentValue = false,
-    Flag = "ESPEnabled",
-    Callback = function(Value)
-        if Value then
-            enableESP()
-        else
-            disableESP()
-        end
-    end,
-})
-
--- Annoying Tab
-local AnnoyingTab = Window:CreateTab("Annoying", 6031280882) -- Troll Icon
-
-AnnoyingTab:CreateButton({
-    Name = "One Punch (Set Health to 0 on Impact)",
-    Callback = function()
-        runService.Heartbeat:Connect(function()
-            for _, player in pairs(players:GetPlayers()) do
-                if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
-                    local distance = (localPlayer.Character.PrimaryPart.Position - player.Character.PrimaryPart.Position).Magnitude
-                    if distance < 5 then
-                        player.Character.Humanoid.Health = 0
+    local function autoFarm()
+        while settings.autoFarm do
+            -- Implement your farming logic here
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    -- Example: Move to a dummy to train
+                    for _, dummy in pairs(workspace:GetChildren()) do
+                        if dummy:IsA("Model") and dummy.Name == "TrainingDummy" then
+                            humanoidRootPart.CFrame = dummy.PrimaryPart.CFrame
+                            -- Add interaction logic if needed
+                        end
                     end
                 end
             end
-        end)
-    end,
-})
-
--- AutoFarm Tab
-local AutoFarmTab = Window:CreateTab("AutoFarm", 6031302951) -- Coin Icon
-
-AutoFarmTab:CreateToggle({
-    Name = "Auto Pickup",
-    CurrentValue = false,
-    Flag = "AutoPickup",
-    Callback = function(Value)
-        autoPickupEnabled = Value
-        if autoPickupEnabled then
-            autoPickupItems()
+            task.wait(1) -- Adjust delay as needed
         end
-    end,
-})
+    end
 
--- Gun Tab
-local GunTab = Window:CreateTab("Gun", 6031763426) -- Gun Icon
+    -- Player Tab
+    local playerTab = Window:MakeTab({
+        Name = "Player",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
 
-GunTab:CreateToggle({
-    Name = "Infinite Ammo",
-    CurrentValue = false,
-    Flag = "InfiniteAmmo",
-    Callback = function(Value)
-        if Value then
-            local tool = localPlayer.Backpack:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Ammo") then
-                tool.Ammo.Value = math.huge
+    playerTab:AddSlider({
+        Name = "Walk Speed",
+        Min = 16,
+        Max = 100,
+        Default = 16,
+        Increment = 1,
+        Callback = function(value)
+            settings.walkSpeed = value
+            setWalkSpeed(value)
+        end
+    })
+
+    playerTab:AddToggle({
+        Name = "God Mode",
+        Default = false,
+        Callback = function(state)
+            if state then
+                enableGodMode()
+            else
+                disableGodMode()
             end
         end
-    end,
-})
+    })
 
-GunTab:CreateButton({
-    Name = "Double Damage",
-    Callback = function()
-        local tool = localPlayer.Backpack:FindFirstChildOfClass("Tool")
-        if tool and tool:FindFirstChild("Damage") then
-            tool.Damage.Value = tool.Damage.Value * 2
+    -- Farming Tab
+    local farmingTab = Window:MakeTab({
+        Name = "Farming",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    farmingTab:AddToggle({
+        Name = "Auto Farm",
+        Default = false,
+        Callback = function(state)
+            settings.autoFarm = state
+            if state then
+                autoFarm()
+            end
         end
-    end,
-})
+    })
 
--- Initialize UI
-Rayfield:Notify({
-    Title = "Troll.God Script Loaded",
-    Content = "Enjoy trolling in SW2!",
-    Duration = 6.5,
-    Image = 4483362458
-})
+    -- Credits Tab
+    local creditsTab = Window:MakeTab({
+        Name = "Credits",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    creditsTab:AddLabel("Developed by yooo0684 on Discord")
+    creditsTab:AddButton({
+        Name = "Join Discord",
+        Callback = function()
+            setclipboard("https://discord.gg/DvgnsUp3")
+        end
+    })
+
+    -- Initialize UI
+    OrionLib:Init()
+end
