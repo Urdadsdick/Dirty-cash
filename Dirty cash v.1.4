@@ -15,7 +15,9 @@ if game.PlaceId == 6804602922 then
         walkSpeed = 16,
         godMode = false,
         onePunch = false,
-        noClip = false
+        noClip = false,
+        autoFarm = false,
+        autoPickup = false
     }
 
     -- Utility Functions
@@ -139,6 +141,30 @@ if game.PlaceId == 6804602922 then
             settings.onePunch = state
             if state then
                 onePunchKill()
+            end
+        end
+    })
+
+    trollingTab:AddToggle({
+        Name = "Auto Farm",
+        Default = false,
+        Callback = function(state)
+            settings.autoFarm = state
+            while settings.autoFarm do
+                -- Add Auto Farm Logic
+                task.wait(1)
+            end
+        end
+    })
+
+    trollingTab:AddToggle({
+        Name = "Auto Pickup",
+        Default = false,
+        Callback = function(state)
+            settings.autoPickup = state
+            while settings.autoPickup do
+                -- Add Auto Pickup Logic
+                task.wait(1)
             end
         end
     })
